@@ -24,13 +24,17 @@ int main ( int argc, char** argv, char** env )
 	CapekNav* nav = CapekNav::GetInstance();
 
 	nav->Initialise();
-	nav->AddTile("../Meshes/32_48.navmesh");
+	//nav->AddTile("../../Meshes/32_48.navmesh");
+	nav->LoadAll("all_tiles_navmesh.bin");
 
-	WOWPOS start = { -8949.95f, -132.493f, 83.5312f };
-	WOWPOS end = { -9046.507f, -45.71962f, 88.33186f };
+	//WOWPOS start = { -8949.95f, -132.493f, 83.5312f };
+	//WOWPOS end = { -9046.507f, -45.71962f, 88.33186f };
 
-	WOWPOS *path = new WOWPOS[MAX_PATH];
-	int size = MAX_PATH;
+	WOWPOS start = { -8208.509766f, 560.342896f, 117.484138f };
+	WOWPOS end = { -8149.819824f, 186.772141f, 154.614746f };
+
+	WOWPOS *path = new WOWPOS[MAX_FIND_PATH];
+	int size = MAX_FIND_PATH;
 
 	int pathSize = nav->FindStraightPath(start, end, path, size);
 

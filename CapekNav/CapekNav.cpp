@@ -21,7 +21,25 @@
 
 #include "Recast.h"
 #include "DetourNavMesh.h"
+#include "DetourNavMeshQuery.h"
 #include "File.h"
+
+static const int NAVMESHSET_MAGIC = 'M'<<24 | 'S'<<16 | 'E'<<8 | 'T'; //'MSET';
+static const int NAVMESHSET_VERSION = 1;
+
+struct NavMeshSetHeader
+{
+	int magic;
+	int version;
+	int numTiles;
+	dtNavMeshParams params;
+};
+
+struct NavMeshTileHeader
+{
+	dtTileRef tileRef;
+	int dataSize;
+};
 
 //
 CapekNav* CapekNav::s_singletonInstance = NULL;
@@ -53,6 +71,13 @@ bool CapekNav::Initialise()
 		std::cerr << "Could not create Detour navmesh" << std::endl;
 		return false;
 	}
+
+	m_navMeshQuery = new dtNavMeshQuery;
+	if (!m_navMeshQuery)
+	{
+		std::cerr << "Could not create Detour navmesh query" << std::endl;
+		return false;
+	}
 	return true;
 }
 
@@ -60,6 +85,62 @@ bool CapekNav::Initialise()
 bool CapekNav::Release()
 {
 	delete m_navMesh;
+	delete m_navMeshQuery;
+	return true;
+}
+
+//
+bool CapekNav::LoadAll(const char *fn)
+{
+	FILE* fp = fopen(fn, "rb");
+	if (!fp) return 0;
+
+	// Read header.
+	NavMeshSetHeader header;
+	fread(&header, sizeof(NavMeshSetHeader), 1, fp);
+	if (header.magic != NAVMESHSET_MAGIC)
+	{
+		fclose(fp);
+		return 0;
+	}
+	if (header.version != NAVMESHSET_VERSION)
+	{
+		fclose(fp);
+		return 0;
+	}
+
+	dtNavMesh* mesh = dtAllocNavMesh();
+	if (!mesh)
+	{
+		fclose(fp);
+		return 0;
+	}
+	dtStatus status = mesh->init(&header.params);
+	if (dtStatusFailed(status))
+	{
+		fclose(fp);
+		return 0;
+	}
+
+	// Read tiles.
+	for (int i = 0; i < header.numTiles; ++i)
+	{
+		NavMeshTileHeader tileHeader;
+		fread(&tileHeader, sizeof(tileHeader), 1, fp);
+		if (!tileHeader.tileRef || !tileHeader.dataSize)
+			break;
+
+		unsigned char* data = (unsigned char*)dtAlloc(tileHeader.dataSize, DT_ALLOC_PERM);
+		if (!data) break;
+		memset(data, 0, tileHeader.dataSize);
+		fread(data, tileHeader.dataSize, 1, fp);
+
+		mesh->addTile(data, tileHeader.dataSize, DT_TILE_FREE_DATA, tileHeader.tileRef, 0);
+	}
+
+	fclose(fp);
+
+	m_navMesh = mesh;
 	return true;
 }
 
@@ -80,7 +161,7 @@ bool CapekNav::AddTile(const char *fn)
 	file->Close();
 
 	//
-	if (!m_navMesh->init(navData, navDataSize, DT_TILE_FREE_DATA, 2048))
+	if (!m_navMesh->init(navData, navDataSize, DT_TILE_FREE_DATA))
 	{
 		delete [] navData;
 		std::cerr << "Could not init Detour navmesh" << std::endl;
@@ -107,8 +188,8 @@ int CapekNav::FindStraightPath(WOWPOS start, WOWPOS end, WOWPOS *path, int size)
 
 	//
 	dtQueryFilter m_filter;
-	m_filter.includeFlags = 0xffff;
-	m_filter.excludeFlags = 0;
+	m_filter.setIncludeFlags(0xffff) ;
+	m_filter.setExcludeFlags(0);
 
 	//
 	float m_polyPickExt[3];
@@ -121,8 +202,12 @@ int CapekNav::FindStraightPath(WOWPOS start, WOWPOS end, WOWPOS *path, int size)
 	dtPolyRef m_endRef;
 
 	//
-	m_startRef = m_navMesh->findNearestPoly(m_spos, m_polyPickExt, &m_filter, 0);
-	m_endRef = m_navMesh->findNearestPoly(m_epos, m_polyPickExt, &m_filter, 0);
+	m_navMeshQuery->init(m_navMesh, 2048);
+
+	float nearestPt[3];
+
+	dtStatus status = m_navMeshQuery->findNearestPoly(m_spos, m_polyPickExt, &m_filter, &m_startRef, nearestPt);
+	status = m_navMeshQuery->findNearestPoly(m_epos, m_polyPickExt, &m_filter, &m_endRef, nearestPt);
 
 	//
 	if ( !m_startRef || !m_endRef )
@@ -144,11 +229,11 @@ int CapekNav::FindStraightPath(WOWPOS start, WOWPOS end, WOWPOS *path, int size)
 	int pos = 0;
 
 	//
-	m_npolys = m_navMesh->findPath(m_startRef, m_endRef, m_spos, m_epos, &m_filter, m_polys, MAX_POLYS);
+	status = m_navMeshQuery->findPath(m_startRef, m_endRef, m_spos, m_epos, &m_filter, m_polys, &m_npolys, MAX_POLYS);
 	m_nstraightPath = 0;
 	if (m_npolys)
 	{
-		m_nstraightPath = m_navMesh->findStraightPath(m_spos, m_epos, m_polys, m_npolys, m_straightPath, m_straightPathFlags, m_straightPathPolys, MAX_POLYS);
+		status = m_navMeshQuery->findStraightPath(m_spos, m_epos, m_polys, m_npolys, m_straightPath, m_straightPathFlags, m_straightPathPolys, &m_nstraightPath, MAX_POLYS);
 		for ( int i = 0; i < m_nstraightPath*3; )
 		{
 			path[pos].y = -1.0f * m_straightPath[i++];

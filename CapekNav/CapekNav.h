@@ -19,12 +19,13 @@
 
 //
 #include "DetourNavMesh.h"
+#include "DetourNavMeshQuery.h"
 
 //
 typedef struct _WOWPOS { float x; float y; float z; } WOWPOS;
 
 //
-#define MAX_PATH 1024
+#define MAX_FIND_PATH 1024
 
 //
 class CapekNav
@@ -46,10 +47,13 @@ public:
 	int FindStraightPath(WOWPOS start, WOWPOS end, WOWPOS* path, int size );
 	//
 	bool AddTile(const char* fn);
+	//
+	bool LoadAll(const char* fn);
 
 private:
 	//
 	dtNavMesh* m_navMesh;
+	dtNavMeshQuery* m_navMeshQuery;
 
 	//
 	CapekNav();

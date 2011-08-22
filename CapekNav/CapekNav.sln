@@ -1,0 +1,26 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CapekNav", "CapekNav.vcxproj", "{D0DE39FF-0BFD-45D4-AC14-965989040AFB}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CapekNavTest", "..\CapekNavTest\CapekNavTest.vcxproj", "{99C31731-1A33-4B00-BF6D-A1B891BB594B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D0DE39FF-0BFD-45D4-AC14-965989040AFB}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D0DE39FF-0BFD-45D4-AC14-965989040AFB}.Debug|Win32.Build.0 = Debug|Win32
+		{D0DE39FF-0BFD-45D4-AC14-965989040AFB}.Release|Win32.ActiveCfg = Release|Win32
+		{D0DE39FF-0BFD-45D4-AC14-965989040AFB}.Release|Win32.Build.0 = Release|Win32
+		{99C31731-1A33-4B00-BF6D-A1B891BB594B}.Debug|Win32.ActiveCfg = Debug|Win32
+		{99C31731-1A33-4B00-BF6D-A1B891BB594B}.Debug|Win32.Build.0 = Debug|Win32
+		{99C31731-1A33-4B00-BF6D-A1B891BB594B}.Release|Win32.ActiveCfg = Release|Win32
+		{99C31731-1A33-4B00-BF6D-A1B891BB594B}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
